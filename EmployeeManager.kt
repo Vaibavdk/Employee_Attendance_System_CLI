@@ -1,102 +1,120 @@
-import java.time.LocalDate
-import java.time.LocalTime
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 class EmployeeManager {
-    val employeeList=mutableListOf<EmployeeData>()
-    var counter=0
-    fun addEmployee(){
+    val employeeList = mutableListOf<EmployeeData>()
+    var counter = 0
+    val attendanceEntry = mutableListOf<AttendanceData>()
+
+    fun addEmployee() {
         println("Enter the details of the employee below:")
 
-        println("Enter the First name:")
-        val firstName=readln().toString().lowercase()
+        print("Enter the First name: ")
+        val firstName = readln().trim().lowercase()
 
-        println("Enter the Last name:")
-        val lastName=readln().toString().lowercase()
+        print("Enter the Last name: ")
+        val lastName = readln().trim().lowercase()
 
-        println("Enter the Role:")
-        val empRole=readln().toString().lowercase()
+        print("Enter the Role: ")
+        val empRole = readln().trim().lowercase()
 
-        println("Enter the Reporting Manager ID:")
-        val reportingTo=readln().toString().lowercase()
+        print("Enter the Reporting Manager ID: ")
+        val reportingTo = readln().trim().lowercase()
 
-        val empId="${firstName[0]}${lastName[0]}$counter"
+        val empId = "${firstName[0]}${lastName[0]}$counter"
 
-        val employee= EmployeeData(empId,firstName,lastName,empRole,reportingTo)
+        val employee = EmployeeData(empId, firstName, lastName, empRole, reportingTo)
         employeeList.add(employee)
-        println("Employee had been added successfully and the Employee Id is $empId")
+        println("Employee has been added successfully and the Employee ID is $empId")
         counter++
-
     }
 
-    //Creating new Attendance Entry list
-    val attendanceEntry=mutableListOf<AttendanceData>()
-
-    //Checking for the employee exist in the Employee List
-    fun isEmployeeExist(inputId:String):Boolean{
-
-        val employeeComponet=employeeList.find { it.empId==inputId }
-        if(employeeComponet==null){
-            println("Employee is Not found ")
+    fun isEmployeeExist(inputId: String): Boolean {
+        val employeeComponent = employeeList.find { it.empId == inputId }
+        if (employeeComponent == null) {
+            println("Employee not found.")
             return false
         }
-        else{
-            return true
-        }
+        return true
     }
 
-    //Checking for the EmpId is present in the attendance list in the specific date
-    fun isCheckedIn(inputId: String,checkDate:String):Boolean{
-        val alreadyCheckedIn=attendanceEntry.any{
-            it.empId==inputId && it.attendanceDate==checkDate}
-        if(alreadyCheckedIn){
-            println("Already checked inn!!")
+    fun isCheckedIn(inputId: String, checkDateTime: LocalDateTime): Boolean {
+        val alreadyCheckedIn = attendanceEntry.any {
+            it.empId == inputId && it.attendanceDateTime.toLocalDate() == checkDateTime.toLocalDate()
+        }
+        if (alreadyCheckedIn) {
+            println("Already checked in!!")
             return true
         }
-        else {
-            return false
-        }
-
+        return false
     }
 
-    fun attendanceValidation(){
-        val currentDate= LocalDate.now().toString()
-        val currentTime= LocalTime.now().toString()
-        println("Enter the Employee ID to add the Attendance:")
-        val inputId=readln().trim()
-        if(isEmployeeExist(inputId)){
-            if(!isCheckedIn(inputId,currentDate)){
-                val newEntry=AttendanceData(inputId,currentDate, currentTime)
+    fun attendanceValidation() {
+        print("Enter the Employee ID to add the Attendance: ")
+        val inputId = readln().trim()
+
+        val currentDateTime = LocalDateTime.now()
+
+        if (isEmployeeExist(inputId)) {
+            if (!isCheckedIn(inputId, currentDateTime)) {
+                val newEntry = AttendanceData(inputId, currentDateTime)
                 attendanceEntry.add(newEntry)
-                println("Attendance had marked Successfully!!")
-
+                println("Attendance has been marked successfully!!")
             }
         }
     }
 
-    fun viewAllEmployee(){
+    fun manualCheckIn() {
+        print("Enter the Employee ID: ")
+        val empId = readln().trim()
+        if (!isEmployeeExist(empId)) return
+
+        print("Enter date and time (YYYY-MM-DD HH:MM), or leave blank to use current: ")
+        val input = readln().trim()
+
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+        val inputDateTime = if (input.isEmpty()) {
+            LocalDateTime.now()
+        } else {
+            try {
+                LocalDateTime.parse(input, formatter)
+            } catch (e: Exception) {
+                println("Invalid date-time format. Use YYYY-MM-DD HH:MM")
+                return
+            }
+        }
+
+
+        if (isCheckedIn(empId, inputDateTime)) return
+
+        attendanceEntry.add(AttendanceData(empId, inputDateTime))
+        println("Manual check-in added successfully.")
+    }
+
+    fun viewAllEmployee() {
         if (employeeList.isEmpty()) {
             println("No employees found.")
             return
         }
-5
         println("List of All Employees:")
         println("--------------------------------------------")
         employeeList.forEach { emp ->
-            println("|ID: ${emp.empId.uppercase()} | Name: ${emp.firstName.capitalize()} ${emp.lastName.capitalize()} | Role: ${emp.empRole.capitalize()} | Reports to: ${emp.reportingTo.uppercase()}|")
+            println("| ID: ${emp.empId.uppercase()} | Name: ${emp.firstName.replaceFirstChar(Char::uppercase)} ${emp.lastName.replaceFirstChar(Char::uppercase)} | Role: ${emp.empRole.replaceFirstChar(Char::uppercase)} | Reports to: ${emp.reportingTo.uppercase()} |")
         }
         println("--------------------------------------------")
     }
-    fun viewAttendanceEntry(){
+
+    fun viewAttendanceEntry() {
         if (attendanceEntry.isEmpty()) {
-            println("No employees found.")
+            println("No attendance records found.")
             return
         }
-
-        println("List of All Employees:")
+        println("List of All Attendance Entries:")
         println("--------------------------------------------")
         attendanceEntry.forEach { emp ->
-            println("ID: ${emp.empId.uppercase()} | Date ${emp.attendanceDate} | Time ${emp.attendanceTime}")
+            val formatted = emp.attendanceDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+            println("|ID: ${emp.empId.uppercase()} | DateTime: $formatted|")
         }
         println("--------------------------------------------")
     }
-    }
+}
