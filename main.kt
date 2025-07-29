@@ -1,35 +1,32 @@
-import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 data class EmployeeData(
     val empId: String,
-    val firstName:String,
-    val lastName:String,
-    val empRole:String,
-    val reportingTo:String,
+    val firstName: String,
+    val lastName: String,
+    val empRole: String,
+    val reportingTo: String,
 )
 
 data class AttendanceData(
     val empId: String,
-    val attendanceDate: String,
-    val attendanceTime: String)
+    val attendanceDateTime: LocalDateTime
+)
 
-
-
-fun main(){
-    val manager= EmployeeManager()
-
-
-    while(true){ println("-------------------------------")
-    println("Current date : ${LocalDate.now().toString()}")
+fun start(manager: EmployeeManager){
+    while (true) {
         println("-------------------------------")
-    println("1. Add new Employee")
-    println("2. Add Attendance")
-    println("3. Check Attendance at specific date")
-    println("4. View all the Employee list")
-    println("5. View all the Attendance list" )
-    println("6. Exit")
+        println("Current date & time: ${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))}")
         println("-------------------------------")
-
+        println("1. Add new Employee")
+        println("2. Mark Check-in today")
+        println("3. Manual Check-in with DateTime")
+        println("4. Check Attendance at specific date")
+        println("5. View all the Employee list")
+        println("6. View all the Attendance list")
+        println("7. Exit")
+        println("-------------------------------")
 
         val n = try {
             readln().toInt()
@@ -38,21 +35,39 @@ fun main(){
             continue
         }
 
+        when (n) {
+            1 -> manager.addEmployee()
+            2 -> manager.attendanceValidation()
+            3 -> manager.manualCheckIn()
+            4 -> {
+                print("Enter Employee ID: ")
+                val inputId = readln().trim()
+                print("Enter date and time (YYYY-MM-DD HH:MM): ")
+                val dateInput = readln().trim()
 
-    when(n){
-    1->manager.addEmployee()
-    2->manager.attendanceValidation()
-    3->{println("Enter Employee Id to check:")
-        val inputId=readln()
-        println("Enter the date formate in YYYY-MM-DD")
-        val checkDate=readln()
-        if(!manager.isCheckedIn(inputId,checkDate)){
-            println("Not present")
+                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+                val dateTime = try {
+                    LocalDateTime.parse(dateInput, formatter)
+                } catch (e: Exception) {
+                    println("Invalid date-time format.")
+                    continue
+                }
+
+                if (!manager.isCheckedIn(inputId, dateTime)) {
+                    println("Not present")
+                }
+            }
+            5 -> manager.viewAllEmployee()
+            6 -> manager.viewAttendanceEntry()
+            7 -> break
+            else -> println("Invalid option. Try again.")
         }
     }
-    4->manager.viewAllEmployee()
-    5->manager.viewAttendanceEntry()
-    6->break
-    }
-    }
+
+}
+
+fun main() {
+    val manager = EmployeeManager()
+    start(manager)
+
 }
