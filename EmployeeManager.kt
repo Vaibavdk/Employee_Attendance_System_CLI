@@ -1,47 +1,26 @@
 import java.time.LocalDateTime
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.Duration
 
-class EmployeeManager {
-    val employeeList = mutableListOf<EmployeeData>()
-    var counter = 0
-    val attendanceEntry = mutableListOf<AttendanceData>()
+class AttendanceManager(private val employeeManager: EmployeeManager) {
+    private val attendanceEntry = mutableListOf<AttendanceData>()
 
-    fun addEmployee() {
-        println("Enter the details of the employee below:")
-
-        print("Enter the First name: ")
-        val firstName = readln().trim().lowercase()
-
-        print("Enter the Last name: ")
-        val lastName = readln().trim().lowercase()
-
-        print("Enter the Role: ")
-        val empRole = readln().trim().lowercase()
-
-        print("Enter the Reporting Manager ID: ")
-        val reportingTo = readln().trim().lowercase()
-
-        val empId = "${firstName[0]}${lastName[0]}$counter"
-
-        val employee = EmployeeData(empId, firstName, lastName, empRole, reportingTo)
-        employeeList.add(employee)
-        println("Employee has been added successfully and the Employee ID is $empId")
-        counter++
-    }
-
+    //Check whether the employee exist or not
     fun isEmployeeExist(inputId: String): Boolean {
-        val employeeComponent = employeeList.find { it.empId == inputId }
-        if (employeeComponent == null) {
-            println("Employee not found.")
-            return false
+        val employeeComponent = employeeManager.employeeList.any { it.empId == inputId }
+        if(!employeeComponent){
+            println("Employee doesn't Exist")
         }
-        return true
+        return employeeComponent
     }
 
+    //Check whether the employee already checked in or not
     fun isCheckedIn(inputId: String, checkDateTime: LocalDateTime): Boolean {
         val alreadyCheckedIn = attendanceEntry.any {
-            it.empId == inputId && it.attendanceDateTime.toLocalDate() == checkDateTime.toLocalDate()
+            it.empId == inputId && it.checkInDateTime.toLocalDate() == checkDateTime.toLocalDate()
         }
+
         if (alreadyCheckedIn) {
             println("Already checked in!!")
             return true
@@ -49,7 +28,8 @@ class EmployeeManager {
         return false
     }
 
-    fun attendanceValidation() {
+    //Used mark the given employee id as checked in
+    fun todayCheckIn() {
         print("Enter the Employee ID to add the Attendance: ")
         val inputId = readln().trim()
 
@@ -62,14 +42,16 @@ class EmployeeManager {
                 println("Attendance has been marked successfully!!")
             }
         }
+
     }
 
+    //Manual entry for the given date and the employee id
     fun manualCheckIn() {
         print("Enter the Employee ID: ")
         val empId = readln().trim()
         if (!isEmployeeExist(empId)) return
 
-        print("Enter date and time (YYYY-MM-DD HH:MM), or leave blank to use current: ")
+        print("Enter date and time (YYYY-MM-DD HH:MM):")
         val input = readln().trim()
 
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
@@ -84,6 +66,13 @@ class EmployeeManager {
             }
         }
 
+        val today = LocalDate.now()
+        val inputDate = inputDateTime.toLocalDate()
+
+        if (inputDate.isAfter(today)) {
+            println("You can't check in for a future date.")
+            return
+        }
 
         if (isCheckedIn(empId, inputDateTime)) return
 
@@ -91,30 +80,60 @@ class EmployeeManager {
         println("Manual check-in added successfully.")
     }
 
-    fun viewAllEmployee() {
-        if (employeeList.isEmpty()) {
-            println("No employees found.")
-            return
-        }
-        println("List of All Employees:")
-        println("--------------------------------------------")
-        employeeList.forEach { emp ->
-            println("| ID: ${emp.empId.uppercase()} | Name: ${emp.firstName.replaceFirstChar(Char::uppercase)} ${emp.lastName.replaceFirstChar(Char::uppercase)} | Role: ${emp.empRole.replaceFirstChar(Char::uppercase)} | Reports to: ${emp.reportingTo.uppercase()} |")
-        }
-        println("--------------------------------------------")
-    }
-
+    //To view attendance list
     fun viewAttendanceEntry() {
         if (attendanceEntry.isEmpty()) {
             println("No attendance records found.")
             return
         }
+
         println("List of All Attendance Entries:")
         println("--------------------------------------------")
         attendanceEntry.forEach { emp ->
-            val formatted = emp.attendanceDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-            println("|ID: ${emp.empId.uppercase()} | DateTime: $formatted|")
+            println("|ID: ${emp.empId.uppercase()} | Check-IN DateTime: ${emp.checkInDateTime}| Check-OUT DateTime: ${emp.checkOutDateTime}| Number Of Working Hours: ${emp.workingHours}|")
         }
         println("--------------------------------------------")
     }
+
+    //Used to mark checkout time and calculate the working hour
+    fun checkOutEmployee() {
+        print("Enter the Employee ID for checkout: ")
+        val empId = readln().trim()
+
+        // Find today's check-in record for this employee
+        val today = LocalDate.now()
+        val record = attendanceEntry.find {
+            it.empId == empId &&
+                    it.checkInDateTime.toLocalDate() == today &&
+                    it.checkOutDateTime == null
+        }
+
+        if (record == null) {
+            println("No check-in record found for today or already checked out.")
+            return
+        }
+
+        val checkOutTime = LocalDateTime.now()
+
+        if (checkOutTime.isBefore(record.checkInDateTime)) {
+            println("Invalid checkout time. Cannot be before check-in.")
+            return
+        }
+
+        record.checkOutDateTime = checkOutTime
+
+        val duration = Duration.between(record.checkInDateTime, checkOutTime)
+
+        val totalMinutes = duration.toMinutes()
+        val hours = totalMinutes / 60        // integer division
+        val minutes = totalMinutes % 60      // remainder minutes
+
+        println("Total working time: $hours hours and $minutes minutes")
+        record.workingHours=totalMinutes/60.0
+
+
+
+
+    }
+
 }
