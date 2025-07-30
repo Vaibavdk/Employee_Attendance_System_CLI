@@ -11,22 +11,26 @@ data class EmployeeData(
 
 data class AttendanceData(
     val empId: String,
-    val attendanceDateTime: LocalDateTime
+    val checkInDateTime: LocalDateTime,
+    var checkOutDateTime: LocalDateTime?=null,
+    var workingHours: Double?=null
+
 )
 
-fun start(manager: EmployeeManager){
+fun start(employeeManager: EmployeeManager,attendanceManager: AttendanceManager){
     while (true) {
-        println("-------------------------------")
+        println("-------------------------------------")
         println("Current date & time: ${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))}")
-        println("-------------------------------")
+        println("-------------------------------------")
         println("1. Add new Employee")
         println("2. Mark Check-in today")
         println("3. Manual Check-in with DateTime")
         println("4. Check Attendance at specific date")
         println("5. View all the Employee list")
         println("6. View all the Attendance list")
-        println("7. Exit")
-        println("-------------------------------")
+        println("7. Check-Out")
+        println("8. Exit")
+        println("-------------------------------------")
 
         val n = try {
             readln().toInt()
@@ -36,9 +40,9 @@ fun start(manager: EmployeeManager){
         }
 
         when (n) {
-            1 -> manager.addEmployee()
-            2 -> manager.attendanceValidation()
-            3 -> manager.manualCheckIn()
+            1 -> employeeManager.addEmployee()
+            2 -> attendanceManager.todayCheckIn()
+            3 -> attendanceManager.manualCheckIn()
             4 -> {
                 print("Enter Employee ID: ")
                 val inputId = readln().trim()
@@ -53,13 +57,14 @@ fun start(manager: EmployeeManager){
                     continue
                 }
 
-                if (!manager.isCheckedIn(inputId, dateTime)) {
+                if (!attendanceManager.isCheckedIn(inputId, dateTime)) {
                     println("Not present")
                 }
             }
-            5 -> manager.viewAllEmployee()
-            6 -> manager.viewAttendanceEntry()
-            7 -> break
+            5 -> employeeManager.viewAllEmployee()
+            6 -> attendanceManager.viewAttendanceEntry()
+            7 -> attendanceManager.checkOutEmployee()
+            8->break
             else -> println("Invalid option. Try again.")
         }
     }
@@ -67,7 +72,10 @@ fun start(manager: EmployeeManager){
 }
 
 fun main() {
-    val manager = EmployeeManager()
-    start(manager)
+    val employeeManager = EmployeeManager()
+
+    val attendanceManager=AttendanceManager(employeeManager)
+
+    start(employeeManager,attendanceManager)
 
 }
